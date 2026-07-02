@@ -24,17 +24,16 @@ cd "$(dirname "$0")/.."
 source ./scripts/run_common.sh
 
 B=500
-SKIP_DNN=0
 FILTERED=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --no-dnn) SKIP_DNN=1; shift ;;
     --b)
       if [[ $# -lt 2 ]]; then echo "Usage: --b B"; exit 1; fi
       B="$2"; shift 2 ;;
     *) FILTERED+=("$1"); shift ;;
   esac
 done
+# --no-dnn is parsed by twostagepc_parse_args itself
 twostagepc_parse_args "${FILTERED[@]}"
 export SKIP_DNN
 export TWOSTAGEPC_SKIP_DNN="$SKIP_DNN"
