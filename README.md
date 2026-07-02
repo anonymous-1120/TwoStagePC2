@@ -23,13 +23,11 @@ R ≥ 4.0 recommended.
 Rscript R/install_packages.R
 ```
 
-Covers: `parallel`, `doSNOW`, `dplyr`, `MASS`, `ncvreg`, `randomForest`, `ggplot2`, `np` (kernel regression, motivating example only), …
+Covers `parallel`, `doSNOW`, `dplyr`, `MASS`, `ncvreg`, `randomForest`, `ggplot2`, `np`, and other CRAN dependencies — see `R/install_packages.R` for the full list.
 
-**CRAN mirror:** `R/install_packages.R` sets `repos = "https://cloud.r-project.org"`. Interactive `install.packages("…")` without `repos=` fails on many servers with `trying to use CRAN without setting a mirror`; either use the project script or pass `repos=` explicitly.
+### keras3 + Python TensorFlow (optional; needed for DNN)
 
-### keras3 + Python TensorFlow (optional; needed for DNN and ensemble)
-
-DNN and ensemble (NN leg) require **`keras3`** (R) with a Python TensorFlow backend via `reticulate`. Do **not** install the legacy CRAN package `keras`.
+DNN requires **`keras3`** (R) with a Python TensorFlow backend via `reticulate`. Do **not** install the legacy CRAN package `keras`.
 
 ```bash
 # Step A — reticulate (R <-> Python bridge)
@@ -53,7 +51,7 @@ Verify before running DNN jobs:
 Rscript -e 'library(keras3); cat("backend:", backend(), "\n")'
 ```
 
-If keras3 is unavailable, skip DNN and ensemble: `bash scripts/run_sim_<N>_*.sh --no-dnn`.
+If keras3 is unavailable, skip DNN: `bash scripts/run_sim_<N>_*.sh --no-dnn`.
 
 ### Parallelism and CPU limits
 
@@ -77,7 +75,8 @@ cd TwoStagePC2
 Rscript R/install_packages.R
 # Optional (DNN / ensemble): see § Environment setup above
 
-# Quick smoke test: override B and n to a small size instead of the full B=500 grid
+# Quick smoke test only (B=10, one n): checks the pipeline runs end-to-end.
+# This is NOT the paper's result -- see § Full reproduction below for the real B=500 run.
 TWOSTAGEPC_SIM_B=10 TWOSTAGEPC_SIM_NS="500" bash scripts/run_sim_5_comparison.sh --no-dnn --ncores 4 --quiet
 Rscript MillionSongSubset/realData_revised.R
 ```
@@ -99,13 +98,7 @@ bash scripts/run_sim_8_postprocess.sh --quiet               # tables, figures, v
 
 Monitor any running section with `cat results/DASHBOARD.txt` (progress table, refreshed as each section starts/finishes) or `tail -f results/logs/<section>/*.log`.
 
-To re-run a single cell within Section 3.3 (e.g. after fixing one failed job) without redoing the whole section:
-
-```bash
-bash scripts/run_sim_comparison_cell.sh --setting growing_p15 --dgp nonlinear --learners dnn --dnn-ncores 8 --quiet
-```
-
-For a quick smoke test of any section rather than the full grid, override `TWOSTAGEPC_SIM_B` (replications) and/or `TWOSTAGEPC_SIM_NS` (sample sizes) — no separate smoke script is needed:
+For a quick smoke test of any section rather than the full grid (e.g. to sanity-check the pipeline before committing to a multi-hour/multi-day run), override `TWOSTAGEPC_SIM_B` (replications) and/or `TWOSTAGEPC_SIM_NS` (sample sizes) — no separate smoke script is needed, and this is not a substitute for the full B=500 run above:
 
 ```bash
 TWOSTAGEPC_SIM_B=10 TWOSTAGEPC_SIM_NS="500" bash scripts/run_sim_5_comparison.sh --no-dnn --ncores 4 --quiet
@@ -241,22 +234,3 @@ Rough wall-clock time on a ~64-core Linux server:
 | `scripts/run_sim_7_realdata.sh` | 10–60 min |
 
 Use `tmux` or `screen` for any run longer than your terminal session; do not kill the session while a section is in progress. Reduce scope with `--no-dnn` (skips DNN/ensemble) or by running one `--setting`/`--dgp` cell at a time via `scripts/run_sim_comparison_cell.sh` if you only need to spot-check the logic rather than reproduce every cell.
-
-## Artifacts to check or archive
-
-If you reproduce on a shared/remote machine and want to copy results back to your own computer:
-
-```
-results/motivating/*
-results/**/*_B500.Rdata
-results/**/*_summary.csv
-results/gof/sim_gof_calibration_B500.csv
-results/aggregated/all_simulations_summary.csv
-results/realdata/real_data_results.csv
-results/tables/*.tex
-results/figures/*.pdf
-results/logs/**/*
-results/DASHBOARD.txt
-```
-
-All of `results/` (CSV, JSON, `.Rdata`, tables, figures) is gitignored and regenerated on demand.
